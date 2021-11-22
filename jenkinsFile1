@@ -1,0 +1,104 @@
+pipeline
+{
+    agent any
+    stages
+    {
+      stage('ContinuousDownload')
+      {
+        steps
+        {
+            script
+            {
+                try
+                {
+                  git 'https://github.com/krishnain/mavenn.git'  
+                }
+                catch(Exception e1)
+                {
+                  mail bcc: '', body: 'Jenkins failed at to download code', cc: '', from: '', replyTo: '', subject: 'Download failed', to: 'development.team@gmail.com'
+                  exit(1)
+                }
+               
+            }
+        }
+      }
+      stage('ContinuousBuild')
+      {
+        steps
+        {
+            script
+            {
+                try
+                {
+                  sh 'mvn package'  
+                }
+                catch(Exception e2)
+                {
+                 mail bcc: '', body: 'Jenkins failed at to download code', cc: '', from: '', replyTo: '', subject: 'Build Failed', to: 'Build.team@gmail.com'
+                 exit(1)
+                }
+            }
+        }
+      }
+                stage('ContinuousDeploy')
+                {
+                  steps
+                  {
+                   script
+                   {
+                     try
+                     {
+                      deploy adapters: [tomcat9(credentialsId: 'dfb555e3-9d9f-43f9-ae2b-93ab6e7b36c6', path: '', url: 'http://172.31.3.192:8080')], contextPath: 'testapp', war: '**/*.war'
+                     }
+                     catch(Exception e3)
+                     {
+                      mail bcc: '', body: 'Deploying to QA failed', cc: '', from: '', replyTo: '', subject: 'Deployment failed', to: 'mareware.team@gmail.com'
+                      exit(1)
+                     }
+                   }
+                  }
+                }
+                
+                stage('ContinuousTesting')
+                {
+                  steps
+                  {
+                   script
+                   {
+                     try
+                     {
+                        git 'https://github.com/selenium-saikrishna/FunctionalTesting.git'
+                        sh 'java -jar /home/ubuntu/.jenkins/workspace/DeclarativePipeline/testing.jar'
+                     }
+                     catch(Exception e4)
+                     {
+                      mail bcc: '', body: 'Execution of automation test script failed', cc: '', from: '', replyTo: '', subject: 'Testing failed', to: 'testng.team@gmail.com'
+                      exit(1)
+                     }
+                   }
+                  }
+                }
+                stage('ContinuousDelivery')
+                {
+                  steps
+                  {
+                   script
+                   {
+                     try
+                     {
+                        deploy adapters: [tomcat9(credentialsId: 'dfb555e3-9d9f-43f9-ae2b-93ab6e7b36c6', path: '', url: 'http://172.31.22.139:8080')], contextPath: 'Prodapp', war: '**/*.war'
+                     }
+                     catch(Exception e5)
+                     {
+                      mail bcc: '', body: 'Deployment failed', cc: '', from: '', replyTo: '', subject: 'Delivery  failed', to: 'delivery.team@gmail.com'
+                     }
+                   }
+                  }
+                }
+    }
+}
+    
+
+
+
+      
